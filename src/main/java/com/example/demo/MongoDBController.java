@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.bson.Document;
 
 
 @RestController
@@ -19,8 +20,21 @@ public class MongoDBController {
 
     @PostMapping("mongodb/store/{userID}")
     public ResponseEntity<String> storeDataToMongoDB(@RequestBody String body, @PathVariable String userID) {
-        mongoTemplate.save(body+userID, "mealPlans" );
-        return new ResponseEntity<>("Data stored successfully for user " + userID, HttpStatus.OK);
+        try {
+            // Convert the JSON string to a Document
+            Document document = Document.parse(body);
+
+            // Add the userID field to the Document
+            document.append("userID", userID);
+
+            // Save the Document to MongoDB
+            mongoTemplate.save(document, "mealPlans");
+
+            return new ResponseEntity<>("Data stored successfully for user " + userID, HttpStatus.OK);
+        } catch (Exception e) {
+            // Handle exception if there's an issue with parsing or saving
+            return new ResponseEntity<>("Error storing data for user " + userID, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping("/mongodb/fetch/{userID}")
